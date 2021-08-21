@@ -9,10 +9,12 @@ BOT_NAME = 'gitlab_bot'
 PASSWORD = 'rhy4er6wfjmsgtofrmum'
 
 
+# TODO: Add test for limoo response
+
 class GitlabTests(unittest.TestCase):
 
 
-    def test_projects(self):
+    def test_receive_projects(self):
         loop = asyncio.get_event_loop()
         result = loop.run_until_complete(get_private_projects(MY_GITLAB_TOKEN))
         loop.close()

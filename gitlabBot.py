@@ -9,6 +9,9 @@ from limoo import LimooDriver
 BOT_NAME = 'gitlab_bot'
 PASSWORD = 'rhy4er6wfjmsgtofrmum'
 
+# TODO: Add comment and docstring
+# TODO: Show other usefull data in output massage
+
 
 def is_msg_valid(msg: str):
     pattern = re.compile("(^/گیتلب [\da-zA-Z]{20}$)")
@@ -38,49 +41,54 @@ def get_project_names(projects: list) -> str:
     return  project_names
 
 
+async def disp_resp_msg(event, msg):
+    message_id = event['data']['message']['id']
+    thread_root_id = event['data']['message']['thread_root_id']
+    direct_reply_message_id = event['data']['message']['thread_root_id'] \
+                              and event['data']['message']['id']
+
+    await ld.messages.create(
+        event['data']['workspace_id'],
+        event['data']['message']['conversation_id'],
+        msg,
+        thread_root_id=thread_root_id or message_id,
+        direct_reply_message_id=thread_root_id and message_id)
+
+
+async def resp_for_valid_msg(event, input_msg):
+
+    personal_access_token = input_msg[-20:]
+    projects = await get_private_projects(personal_access_token)
+
+    if projects is None:
+        invalid_token_resp = "توکن ارسال شده صحیح نمی باشد."
+        await disp_resp_msg(event, invalid_token_resp)
+
+    else:
+        project_names = get_project_names(projects)
+        await disp_resp_msg(event, project_names)
+
+
+async def resp_for_unvalid_msg(event):
+    invalid_msg_resp = "فرمت دستور ارسالی صحیح نیست.\n \
+                                    برای ارسال دستور از فرمت زیر استفاده کنید: \n \
+                                    (تعداد کاراکترهای توکن باید برابر ۲۰ باشد) \n \
+                                    /گیتلب <Access Token>"
+
+    invalid_msg_resp = re.sub('\s{2}', '\n', invalid_msg_resp)
+    await disp_resp_msg(event, invalid_msg_resp)
+
+
 async def respond(event):
 
     if check_input_msg_type(event):
 
-        message_id = event['data']['message']['id']
-        thread_root_id = event['data']['message']['thread_root_id']
-        direct_reply_message_id = event['data']['message']['thread_root_id'] \
-            and event['data']['message']['id']
-
         input_msg = event['data']['message']['text']
         validation = is_msg_valid(input_msg)
         if validation:
-            personal_access_token = input_msg[-20:]
-            projects = await get_private_projects(personal_access_token)
-            if projects is None:
-                invalid_token_msg = "توکن ارسال شده صحیح نمی باشد."
-                await ld.messages.create(
-                    event['data']['workspace_id'],
-                    event['data']['message']['conversation_id'],
-                    invalid_token_msg,
-                    thread_root_id=thread_root_id or message_id,
-                    direct_reply_message_id=thread_root_id and message_id)
-            else:
-                project_names = get_project_names(projects)
-
-                await ld.messages.create(
-                    event['data']['workspace_id'],
-                    event['data']['message']['conversation_id'],
-                    project_names,
-                    thread_root_id=thread_root_id or message_id,
-                    direct_reply_message_id=thread_root_id and message_id)
+            await resp_for_valid_msg(event, input_msg)
         else:
-            invalid_input_msg = "فرمت دستور ارسالی صحیح نیست.\n \
-                                برای ارسال دستور از فرمت زیر استفاده کنید: \n \
-                                (تعداد کاراکترهای توکن باید برابر ۲۰ باشد) \n \
-                                /گیتلب <Access Token>"
-            invalid_input_msg = re.sub('\s{2}', '\n', invalid_input_msg)
-            await ld.messages.create(
-                event['data']['workspace_id'],
-                event['data']['message']['conversation_id'],
-                invalid_input_msg,
-                thread_root_id=thread_root_id or message_id,
-                direct_reply_message_id=thread_root_id and message_id)
+            await resp_for_unvalid_msg(event)
 
 
 async def listen(ld):

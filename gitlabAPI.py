@@ -1,5 +1,6 @@
 import aiohttp
 
+# TODO: Add comment and docstring
 
 async def request_projects(token: str):
     headers = {"PRIVATE-TOKEN": token}
