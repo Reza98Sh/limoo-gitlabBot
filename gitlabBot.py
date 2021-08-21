@@ -1,19 +1,21 @@
-import requests
-import json
+
 import contextlib
 import asyncio
+import aiohttp
 import re
 
 from limoo import LimooDriver
-from pprint import pprint
 
-MY_GITLAB = "e5HSLHCaGewoJ5bfSNAH"
+BOT_NAME = 'gitlab_bot'
+PASSWORD = 'rhy4er6wfjmsgtofrmum'
 
+async def get_private_projects(token: str) -> list:
 
-def getPrivateProjects(token: str):
-
-    projects = requests.get("https://gitlab.com/api/v4/projects?owned=true",
-                            headers={"PRIVATE-TOKEN": token}).json()
+    headers = {"PRIVATE-TOKEN": token}
+    async with aiohttp.ClientSession(headers=headers) as session:
+        gitlab_api_url = "https://gitlab.com/api/v4/projects?owned=true"
+        async with session.get(gitlab_api_url) as resp:
+            projects = await resp.json()
 
     projects_cleared = []
 
@@ -51,15 +53,33 @@ async def respond(event):
         direct_reply_message_id = event['data']['message']['thread_root_id'] \
             and event['data']['message']['id']
 
-        validation = is_msg_valid(event['data']['message']['text'])
-        
+        msg = event['data']['message']['text']
+        validation = is_msg_valid(msg)
 
-        await ld.messages.create(
-            event['data']['workspace_id'],
-            event['data']['message']['conversation_id'],
-            event['data']['message']['text'],
-            thread_root_id=thread_root_id or message_id,
-            direct_reply_message_id=thread_root_id and message_id)
+        if validation:
+            projects = await get_private_projects(msg[-20:])
+
+            project_names = ''
+            for project in projects:
+                project_names += project['name'] + '\n'
+
+            await ld.messages.create(
+                event['data']['workspace_id'],
+                event['data']['message']['conversation_id'],
+                project_names,
+                thread_root_id=thread_root_id or message_id,
+                direct_reply_message_id=thread_root_id and message_id)
+        else:
+            invalid_input_msg = "فرمت دستور ارسالی صحیح نیست.\n \
+                                برای ارسال دستور از فرمت زیر استفاده کنید: \n \
+                                /گیتلب <Access Token>"
+            invalid_input_msg = re.sub('\s{2}', '\n', invalid_input_msg)
+            await ld.messages.create(
+                event['data']['workspace_id'],
+                event['data']['message']['conversation_id'],
+                invalid_input_msg,
+                thread_root_id=thread_root_id or message_id,
+                direct_reply_message_id=thread_root_id and message_id)
 
 
 async def listen(ld):
@@ -71,13 +91,16 @@ async def listen(ld):
 
 
 async def main():
+
     global ld, self
     async with contextlib.AsyncExitStack() as stack:
-        ld = LimooDriver('web.limoo.im', 'gitlab_bot', 'rhy4er6wfjmsgtofrmum')
+        ld = LimooDriver('web.limoo.im', BOT_NAME, PASSWORD)
         stack.push_async_callback(ld.close)
 
         self = await ld.users.get()
         await listen(ld)
 
 
-asyncio.run(main())
+if __name__ == '__main__':
+
+    asyncio.run(main())
