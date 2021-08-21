@@ -1,4 +1,3 @@
-
 import contextlib
 import asyncio
 import re
@@ -8,8 +7,6 @@ from limoo import LimooDriver
 
 BOT_NAME = 'gitlab_bot'
 PASSWORD = 'rhy4er6wfjmsgtofrmum'
-
-# TODO: Show other usefull data in output massage
 
 
 def is_msg_valid(msg: str):
@@ -32,23 +29,28 @@ def check_input_msg_type(event) -> bool:
 
     if (event['event'] == 'message_created'
             and
-        not (event['data']['message']['type']
-                or
-            event['data']['message']['user_id'] == self['id'])):
+            not (event['data']['message']['type']
+                 or
+                 event['data']['message']['user_id'] == self['id'])):
 
         return True
     else:
         return False
 
 
-def get_project_names(projects: list) -> str:
-    """ Extract project names and save it in string """
+def reformat_projects_data(projects: list) -> str:
+    """ Reform data to the desired string to display in the output response """
 
-    project_names = ''
+    projects_data = ''
     for project in projects:
-        project_names += project['name'] + '\n'
+        projects_data += project['name'] + "\n" + \
+                         "Created at: " + project['created_at'] + "\n" + \
+                         "Stars: " + str(project['stars']) + "\t" + \
+                         "Forks: " + str(project['forks']) + "\n" + \
+                         "Description: " + "\n\t" + project['description'] + "\n" + \
+                         "______________________________ " + "\n"
 
-    return  project_names
+    return projects_data
 
 
 async def print_resp_msg(event, msg):
@@ -74,7 +76,8 @@ async def print_resp_msg(event, msg):
         event['data']['message']['conversation_id'],
         msg,
         thread_root_id=thread_root_id or message_id,
-        direct_reply_message_id=thread_root_id and message_id)
+        direct_reply_message_id=thread_root_id and message_id
+    )
 
 
 async def resp_for_valid_msg(event, input_msg):
@@ -89,8 +92,8 @@ async def resp_for_valid_msg(event, input_msg):
         await print_resp_msg(event, invalid_token_resp)
 
     else:
-        # Personal access token is not valid
-        project_names = get_project_names(projects)
+        # Personal access token is valid
+        project_names = reformat_projects_data(projects)
         await print_resp_msg(event, project_names)
 
 
@@ -143,5 +146,4 @@ async def main():
 
 
 if __name__ == '__main__':
-
     asyncio.run(main())
