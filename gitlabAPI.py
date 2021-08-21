@@ -1,8 +1,9 @@
 import aiohttp
 
-# TODO: Add comment and docstring
 
 async def request_projects(token: str):
+    """ Download user project metadata with gitlab API """
+
     headers = {"PRIVATE-TOKEN": token}
     async with aiohttp.ClientSession(headers=headers) as session:
         gitlab_api_url = "https://gitlab.com/api/v4/projects?owned=true"
@@ -19,7 +20,9 @@ async def request_projects(token: str):
                 return None, None
 
 
-def extract_usfull_data(projects: list) -> list:
+def extract_desired_data(projects: list) -> list:
+    """ Extract desired data about private projects and save it in list """
+
     projects_cleared = []
 
     for project in projects:
@@ -38,10 +41,12 @@ def extract_usfull_data(projects: list) -> list:
 
 async def get_private_projects(token: str):
 
+    # Get response and status code of request
     resp, staus = await request_projects(token)
 
+    # Server response
     if staus == 200:
-        projects_cleared = extract_usfull_data(resp)
+        projects_cleared = extract_desired_data(resp)
         return projects_cleared
     else:
         return None
