@@ -5,8 +5,8 @@ import re
 from gitlabAPI import get_private_projects
 from limoo import LimooDriver
 
-BOT_NAME = 'gitlab_bot'
-PASSWORD = 'rhy4er6wfjmsgtofrmum'
+BOT_NAME = ''  # limoo bot name
+PASSWORD = ''  # password of the bot
 
 
 def is_msg_valid(msg: str):
@@ -146,4 +146,9 @@ async def main():
 
 
 if __name__ == '__main__':
+    
+    assert BOT_NAME and PASSWORD, "Change BOT_NAME and PASSWORD values in the code!"
+
     asyncio.run(main())
+    
+        
